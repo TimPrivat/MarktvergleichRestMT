@@ -39,6 +39,7 @@ import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.exceptions.CodeGenerationException;
 import dev.samstevens.totp.time.SystemTimeProvider;
+import okhttp3.Call;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -103,11 +104,9 @@ public class SkinBaronRestApiApplication {
 
 			// System.out.println(toPrettyFormat(Steamarr.toJSONString()));
 
-			
-			
-			int Threadcount = 12;
+			int Threadcount = 15;
 
-			//SEHR Mächtige schleife
+			// SEHR Mächtige schleife
 			for (int i = 0; i < Threadcount; i++) {
 
 				new AblaufThread(Threadcount, i).start();
@@ -313,11 +312,24 @@ public class SkinBaronRestApiApplication {
 				.method("POST", body).addHeader("Content-Type", "application/json")
 				.addHeader("x-requested-with", "XMLHttpRequest").build();
 
+		
+		
+		// Geht erst weiter, wenn er eine erfolgreiche Antwort bekommen hat
+		Call call = null;
 		Response response = null;
 
 		try {
-			response = client.newCall(request).execute();
-			Thread.sleep(10000);
+			while (call == null) {
+
+				request = new Request.Builder().url("https://api.skinbaron.de/GetExtendedPriceList")
+						.method("POST", body).addHeader("Content-Type", "application/json")
+						.addHeader("x-requested-with", "XMLHttpRequest").build();
+				call = client.newCall(request);
+				Thread.sleep(3000);
+			}
+
+			response = call.execute();
+			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -576,6 +588,8 @@ public class SkinBaronRestApiApplication {
 	}
 
 	static void Test() {
+		syncSkinbaron();
+
 		/*
 		 * steampath = "E://SteamMarketData//Steam_2022_08_10-20_47_49.txt";
 		 * ArrayList<String> skinnames = getSkinnames();
@@ -587,95 +601,81 @@ public class SkinBaronRestApiApplication {
 		 * File("C://Users//timle//Desktop//Steam//AllSkinnames.txt"));
 		 */
 
-		steampath = "E://SteamMarketData//Steam_2022_10_13-23_47_46.txt";
-		String name = "Souvenir G3SG1 | VariCamo (Well-Worn)";
-		JSONObject Skinbaron = parseObject(new File(syncSkinbaron()));
-		Skinbaronarr = (JSONArray) Skinbaron.get("map");
-		hashnames = getSkinnames();
-		
-		Double Skinbaronprice = null;
+		/*
+		 * steampath = "E://SteamMarketData//Steam_2022_10_13-23_47_46.txt"; String name
+		 * = "Souvenir G3SG1 | VariCamo (Well-Worn)"; JSONObject Skinbaron =
+		 * parseObject(new File(syncSkinbaron())); Skinbaronarr = (JSONArray)
+		 * Skinbaron.get("map"); hashnames = getSkinnames();
+		 * 
+		 * Double Skinbaronprice = null;
+		 * 
+		 * for (int o = 0; o < SkinBaronRestApiApplication.Skinbaronarr.size(); o++) {
+		 * 
+		 * JSONObject sb = (JSONObject) SkinBaronRestApiApplication.Skinbaronarr.get(o);
+		 * String sbname = (String) sb.get("marketHashName");
+		 * 
+		 * String asString = sb.toJSONString();
+		 * 
+		 * Gson gson = new Gson(); SkinBaronSkin s = gson.fromJson(sb.toString(),
+		 * SkinBaronSkin.class);
+		 * 
+		 * String FN = "(Factory New)"; String MW = "(Minimal Wear)"; String FT =
+		 * "(Field-Tested)"; String WW = "(Minimal Wear)"; String BS =
+		 * "(Battle-Scarred)";
+		 * 
+		 * // Es gibt sonderfälle, wo skins in der Skinbaronfile stehen, aber weder ST
+		 * // noch Souv sind, aber als souvenier gezählt werden und den preis von
+		 * billigen // Items verfälschen
+		 * 
+		 * /* if ((sbname.contains(FN) || sbname.contains(MW) || sbname.contains(FT) ||
+		 * sbname.contains(WW) || sbname.contains(BS)) && (s.souvenir == null &&
+		 * s.statTrak == null)) { continue;
+		 * 
+		 * }
+		 */
 
-		for (int o = 0; o < SkinBaronRestApiApplication.Skinbaronarr.size(); o++) {
-
-			JSONObject sb = (JSONObject) SkinBaronRestApiApplication.Skinbaronarr.get(o);
-			String sbname = (String) sb.get("marketHashName");
-
-			String asString = sb.toJSONString();
-
-			Gson gson = new Gson();
-			SkinBaronSkin s = gson.fromJson(sb.toString(), SkinBaronSkin.class);
-
-			String FN = "(Factory New)";
-			String MW = "(Minimal Wear)";
-			String FT = "(Field-Tested)";
-			String WW = "(Minimal Wear)";
-			String BS = "(Battle-Scarred)";
-
-			// Es gibt sonderfälle, wo skins in der Skinbaronfile stehen, aber weder ST
-			// noch Souv sind, aber als souvenier gezählt werden und den preis von billigen
-			// Items verfälschen
-
-			/*
-			 * if ((sbname.contains(FN) || sbname.contains(MW) || sbname.contains(FT) ||
-			 * sbname.contains(WW) || sbname.contains(BS)) && (s.souvenir == null &&
-			 * s.statTrak == null)) { continue;
-			 * 
-			 * }
-			 */
-
-			if (s.souvenir != null) {
-				if (!s.souvenir && sbname.contains("Souvenir")) {
-					sbname = sbname.replaceAll("Souvenir ", "");
-				}
-				if (s.souvenir && !sbname.contains("Souvenir")) {
-					sbname = "Souvenir " + sbname;
-				}
-			}
-			if (s.statTrak != null) {
-
-				if (!s.statTrak && sbname.contains("StatTrak™")) {
-					sbname = sbname.replaceAll("StatTrak™ ", "");
-				}
-				if (s.statTrak && !sbname.contains("StatTrak™")) {
-					sbname = "StatTrak™ " + sbname;
-				}
-			}
-
-			if (sbname.equals(name)) {
-				try {
-
-					boolean wear = false;
-
-					try {
-
-						Double w = (Double) sb.get("minWear");
-
-						if (w != null || w != 0.0) {
-
-							wear = true;
-
-						}
-
-					} catch (Exception e) {
-
-					}
-
-					if (sb.get("statTrak") == null && sb.get("souvenir") == null && (wear))
-						continue;
-
-					Skinbaronprice = (Double) sb.get("lowestPrice");
-
-				} catch (ClassCastException e) {
-					Long tmp = (Long) sb.get("lowestPrice");
-					Skinbaronprice = tmp * 1.0;
-
-				}
-
-				break;
-			}
-
-		}
-		System.out.println("SkinbaronPreis: "+ Skinbaronprice);
+		/*
+		 * if (s.souvenir != null) { if (!s.souvenir && sbname.contains("Souvenir")) {
+		 * sbname = sbname.replaceAll("Souvenir ", ""); } if (s.souvenir &&
+		 * !sbname.contains("Souvenir")) { sbname = "Souvenir " + sbname; } } if
+		 * (s.statTrak != null) {
+		 * 
+		 * if (!s.statTrak && sbname.contains("StatTrak™")) { sbname =
+		 * sbname.replaceAll("StatTrak™ ", ""); } if (s.statTrak &&
+		 * !sbname.contains("StatTrak™")) { sbname = "StatTrak™ " + sbname; } }
+		 * 
+		 * if (sbname.equals(name)) { try {
+		 * 
+		 * boolean wear = false;
+		 * 
+		 * try {
+		 * 
+		 * Double w = (Double) sb.get("minWear");
+		 * 
+		 * if (w != null || w != 0.0) {
+		 * 
+		 * wear = true;
+		 * 
+		 * }
+		 * 
+		 * } catch (Exception e) {
+		 * 
+		 * }
+		 * 
+		 * if (sb.get("statTrak") == null && sb.get("souvenir") == null && (wear))
+		 * continue;
+		 * 
+		 * Skinbaronprice = (Double) sb.get("lowestPrice");
+		 * 
+		 * } catch (ClassCastException e) { Long tmp = (Long) sb.get("lowestPrice");
+		 * Skinbaronprice = tmp * 1.0;
+		 * 
+		 * }
+		 * 
+		 * break; }
+		 * 
+		 * } System.out.println("SkinbaronPreis: "+ Skinbaronprice);
+		 */
 
 	}
 
