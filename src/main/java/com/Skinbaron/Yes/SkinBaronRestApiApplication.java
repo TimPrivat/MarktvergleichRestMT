@@ -61,6 +61,7 @@ public class SkinBaronRestApiApplication {
 		ablauf();
 		// syncSkinport();
 		// syncSteam();
+		// System.out.println(getSteamPrice("Sticker | fox | Cologne 2016"));
 		// syncSkinbaron();
 
 		// steampath = "E://SteamMarketData//Steam_2022_10_13-19_16_03.txt";
@@ -117,17 +118,24 @@ public class SkinBaronRestApiApplication {
 
 				Thread.sleep(10000);
 			}
+			// Klon für 2ten Sortingalgorithmus
+			ArrayList<Skin> allskinsClone = new ArrayList<>();
+
+			for (int i = 0; i < allSkins.size(); i++) {
+
+				allskinsClone.add(allSkins.get(i));
+			}
 
 			allSkins.sort(new Skincomparator());
 
-			File ergebnisfile = new File("E://SteamMarketData//ErgebnisFile_" + getDate() + ".txt");
+			File ergebnisfile = new File("E://SteamMarketData//ErgebnisFile_Prozent_" + getDate() + ".txt");
 			ergebnisfile.createNewFile();
 
 			JSONArray erg = new JSONArray();
 
 			for (int i = 0; i < allSkins.size(); i++) {
 
-				if (allSkins.get(i).bessererWert != null && allSkins.get(i).Marktplatz != null) {
+				if (allSkins.get(i).bessererWert != null && allSkins.get(i).MarktplatzProzent != null) {
 
 					Skin skin = allSkins.get(i);
 
@@ -135,9 +143,9 @@ public class SkinBaronRestApiApplication {
 					tmp.put("markethash", skin.markethash);
 					tmp.put("SteamPreis", skin.Steampreis);
 					tmp.put("SteamPreis nach Steuern", round(skin.SteampreisnachSteuern));
-					tmp.put("Marktplatz", skin.Marktplatz);
+					tmp.put("Marktplatz", skin.MarktplatzProzent);
 
-					if (skin.Marktplatz.equals("SkinBaron")) {
+					if (skin.MarktplatzProzent.equals("SkinBaron")) {
 
 						tmp.put("SkinBaronPreis", round(skin.Skinbaronpreis));
 						tmp.put("Differenz", round(skin.SkinBaronPreisdifferenzEuro));
@@ -153,7 +161,6 @@ public class SkinBaronRestApiApplication {
 					erg.add(tmp);
 
 				}
-
 			}
 
 			JSONObject alles = new JSONObject();
@@ -163,11 +170,57 @@ public class SkinBaronRestApiApplication {
 			System.out.println(ps);
 			write(ps, ergebnisfile);
 
+			allskinsClone.sort(new SkincomperatorEuro());
+
+			File ergebnisfileEuro = new File("E://SteamMarketData//ErgebnisFile_Euro_" + getDate() + ".txt");
+			ergebnisfileEuro.createNewFile();
+
+			JSONArray erg2 = new JSONArray();
+
+			for (int i2 = 0; i2 < allskinsClone.size(); i2++) {
+
+				if (allskinsClone.get(i2).bessererWert != null && allskinsClone.get(i2).MarktplatzEuro != null) {
+
+					Skin skin = allskinsClone.get(i2);
+
+					JSONObject tmp = new JSONObject();
+					tmp.put("markethash", skin.markethash);
+					tmp.put("SteamPreis", skin.Steampreis);
+					tmp.put("SteamPreis nach Steuern", round(skin.SteampreisnachSteuern));
+					tmp.put("Marktplatz", skin.MarktplatzEuro);
+
+					if (skin.MarktplatzEuro.equals("SkinBaron")) {
+
+						tmp.put("SkinBaronPreis", round(skin.Skinbaronpreis));
+						tmp.put("Differenz", round(skin.SkinBaronPreisdifferenzEuro));
+						tmp.put("ProzentDifferenz", round(skin.SkinBaronPreisdifferenzProzent));
+					} else {
+
+						tmp.put("SkinPortPreis", round(skin.Skinportpreis));
+						tmp.put("Differenz", round(skin.SkinportPreisdifferenzEuro));
+						tmp.put("ProzentDifferenz", round(skin.SkinportPreisdifferenzProzent));
+
+					}
+
+					erg2.add(tmp);
+
+				}
+
+			}
+
+			JSONObject alles2 = new JSONObject();
+			alles2.put("yes", erg2);
+			String s2 = alles2.toJSONString();
+			String ps2 = toPrettyFormat(s2);
+			System.out.println(ps2);
+			write(ps2, ergebnisfileEuro);
+
 		} catch (Exception e) {
 
 			e.printStackTrace();
 
 		}
+
 	}
 
 	@SuppressWarnings("deprecation")
@@ -203,9 +256,18 @@ public class SkinBaronRestApiApplication {
 		RestTemplate r = new RestTemplate();
 
 		JSONObject h = new JSONObject();
-		h.put("currency", "EUR");
+		// h.put("currency", "EUR");
+		h.put("api_key", "juLCSKqmzVIF2fj6181rINv7F3M");
+		h.put("format", "compact");
 
-		String a = r.postForObject("http://csgobackpack.net/api/GetItemsList/v2/", h, String.class);
+		// Free API
+		// String a = r.postForObject("http://csgobackpack.net/api/GetItemsList/v2/", h,
+		// String.class);
+
+		// Kostet 5€ im Monat
+		String a = r.getForObject(
+				"https://api.steamapis.com/market/items/730?api_key=juLCSKqmzVIF2fj6181rINv7F3M&format=compact",
+				String.class, h);
 		String s = toPrettyFormat(a);
 
 		File f = new File("E://SteamMarketData//Steam_" + getDate() + ".txt");
@@ -312,8 +374,6 @@ public class SkinBaronRestApiApplication {
 				.method("POST", body).addHeader("Content-Type", "application/json")
 				.addHeader("x-requested-with", "XMLHttpRequest").build();
 
-		
-		
 		// Geht erst weiter, wenn er eine erfolgreiche Antwort bekommen hat
 		Call call = null;
 		Response response = null;
@@ -329,7 +389,7 @@ public class SkinBaronRestApiApplication {
 			}
 
 			response = call.execute();
-			
+
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -445,115 +505,142 @@ public class SkinBaronRestApiApplication {
 	}
 
 	static Double getSteamPrice(String markethashname) {
+
 		File f = new File(steampath);
-		Scanner sc = null;
 
+//SteamApi Kostet 5€ im Monat
+
+		JSONObject ganzefile = parseObject(f);
+		Number tmp = (Number) ganzefile.get(markethashname);
+		Double price;
 		try {
-			sc = new Scanner(f);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			price = (Double) tmp;
+
+		} catch (Exception e) {
+
+			Long a = (Long) tmp;
+			price = a * 1.0;
 		}
+		return price;
 
-		while (sc.hasNextLine()) {
-			String line = sc.nextLine();
-
-			if (line.contains("\"name\":")) {
-
-				line = line.replaceAll("\"name\":", "");
-				line = line.substring(0, line.length() - 1);
-				line = line.trim();
-				line = line.substring(1, line.length() - 1);
-
-				if (line.equals(markethashname)) {
-
-					boolean fertig = false;
-
-					while (fertig == false || !line.contains("\"median\": ")) {
-
-						line = sc.nextLine();
-
-						if (line.contains(" \"7_days\":")) {
-
-							line = sc.nextLine();
-							line = sc.nextLine();
-
-							line = line.replaceAll(" ", "");
-							line = line.replaceAll("\"", "");
-							line = line.replaceAll(":", "");
-							line = line.replaceAll(",", "");
-							line = line.replaceAll("median", "");
-
-							Double ergebnis = Double.parseDouble(line);
-
-							if (ergebnis == 0) {
-
-							} else {
-
-								return ergebnis;
-
-							}
-
-						} else if (line.contains(" \"30_days\":")) {
-
-							fertig = true;
-
-						}
-
-					}
-
-					line = line.replaceAll(" ", "");
-					line = line.replaceAll("\"", "");
-					line = line.replaceAll(":", "");
-					line = line.replaceAll(",", "");
-					line = line.replaceAll("median", "");
-
-					Double ergebnis = Double.parseDouble(line);
-
-					// System.out.println(ergebnis);
-
-					return ergebnis;
-				}
-
-			}
-		}
-
-		return null;
+// GratisVersion mit CSGOBackpack: 
+//		Scanner sc = null;
+//
+//		try {
+//			sc = new Scanner(f);
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//
+//		while (sc.hasNextLine()) {
+//			String line = sc.nextLine();
+//
+//			if (line.contains("\"name\":")) {
+//
+//				line = line.replaceAll("\"name\":", "");
+//				line = line.substring(0, line.length() - 1);
+//				line = line.trim();
+//				line = line.substring(1, line.length() - 1);
+//
+//				if (line.equals(markethashname)) {
+//
+//					boolean fertig = false;
+//
+//					while (fertig == false || !line.contains("\"median\": ")) {
+//
+//						line = sc.nextLine();
+//
+//						if (line.contains(" \"7_days\":")) {
+//
+//							line = sc.nextLine();
+//							line = sc.nextLine();
+//
+//							line = line.replaceAll(" ", "");
+//							line = line.replaceAll("\"", "");
+//							line = line.replaceAll(":", "");
+//							line = line.replaceAll(",", "");
+//							line = line.replaceAll("median", "");
+//
+//							Double ergebnis = Double.parseDouble(line);
+//
+//							if (ergebnis == 0) {
+//
+//							} else {
+//
+//								return ergebnis;
+//
+//							}
+//
+//						} else if (line.contains(" \"30_days\":")) {
+//
+//							fertig = true;
+//
+//						}
+//
+//					}
+//
+//					line = line.replaceAll(" ", "");
+//					line = line.replaceAll("\"", "");
+//					line = line.replaceAll(":", "");
+//					line = line.replaceAll(",", "");
+//					line = line.replaceAll("median", "");
+//
+//					Double ergebnis = Double.parseDouble(line);
+//
+//					// System.out.println(ergebnis);
+//
+//					return ergebnis;
+//				}
+//
+//			}
+//		}
+//
+//		return null;
 
 	}
 
 	static ArrayList<String> getSkinnames() {
 
-		System.out.println(steampath);
 		File f = new File(steampath);
-		Scanner sc = null;
-		ArrayList<String> erg = new ArrayList<>();
-		try {
-			sc = new Scanner(f);
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		String line;
-		while (sc.hasNextLine()) {
-			line = sc.nextLine();
+		System.out.println(steampath);
 
-			if (line.contains("\"name\":")) {
+//Bezahlte Version mit SteamAPI
 
-				line = line.replaceAll("\\u0026#39", "\\u0027");
-				line = line.replaceAll("\"name\":", "");
-				line = line.substring(0, line.length() - 1);
-				line = line.replaceAll("\"", "");
+		JSONObject steam = parseObject(f);
 
-				line = line.substring(1);
-				line = line.trim();
-				System.out.println(line);
-				erg.add(line);
-			}
+		return new ArrayList<String>(steam.keySet());
 
-		}
+// KostenLose Version mit CSGOBackpack
+//		File f = new File(steampath);
+//		Scanner sc = null;
+//		ArrayList<String> erg = new ArrayList<>();
+//		try {
+//			sc = new Scanner(f);
+//		} catch (FileNotFoundException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		String line;
+//		while (sc.hasNextLine()) {
+//			line = sc.nextLine();
+//
+//			if (line.contains("\"name\":")) {
+//
+//				line = line.replaceAll("\\u0026#39", "\\u0027");
+//				line = line.replaceAll("\"name\":", "");
+//				line = line.substring(0, line.length() - 1);
+//				line = line.replaceAll("\"", "");
+//
+//				line = line.substring(1);
+//				line = line.trim();
+//				System.out.println(line);
+//				erg.add(line);
+//			}
+//
+//		}
 
-		return erg;
+//		return erg;
 
 	}
 

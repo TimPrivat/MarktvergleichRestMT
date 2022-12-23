@@ -41,9 +41,10 @@ public class AblaufThread implements Runnable {
 
 				String name = SkinBaronRestApiApplication.hashnames.get(i);
 
-				// System.out.println("Aktueller Name: " + name);
+			//	 System.out.println("Aktueller Name: " + name);
 				Double Steamprice = SkinBaronRestApiApplication.getSteamPrice(name);
-				// System.out.println("Aktueller Preis " + Steamprice);
+				
+			//	 System.out.println("Aktueller Preis " + Steamprice);
 
 				// Findet den SkinbaronPreis
 
@@ -161,9 +162,9 @@ public class AblaufThread implements Runnable {
 						+ a.Skinportpreis + " SkinbaronDifferenzEuro:" + a.SkinBaronPreisdifferenzEuro
 						+ " SkinBarondifferenzProzent" + a.SkinBaronPreisdifferenzProzent + " SkinPortDifferenzEuro:"
 						+ a.SkinportPreisdifferenzEuro + " SkinportDifferenzProzent:"
-						+ a.SkinportPreisdifferenzProzent);
+						+ a.SkinportPreisdifferenzProzent+ "EuroMarktplatz: "+a.MarktplatzEuro +" GrößereDifferenz: "+a.groeßereDifferenzEuro );
 
-				if (a.groeßereDifferenzProzent != null) {
+				if (a.groeßereDifferenzProzent != null ) {
 
 					SkinBaronRestApiApplication.allSkins.add(a);
 
