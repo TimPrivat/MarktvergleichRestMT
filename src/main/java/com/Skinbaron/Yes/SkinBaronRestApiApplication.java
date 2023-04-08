@@ -13,6 +13,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -58,7 +59,11 @@ public class SkinBaronRestApiApplication {
 		// String s = toPrettyFormat(j.toJSONString());
 		// Test();
 		// System.out.println(s);
+
 		ablauf();
+		// System.out.println( new
+		// SkinBaronRestApiApplication().getClass().getProtectionDomain().getCodeSource().getLocation());
+
 		// syncSkinport();
 		// syncSteam();
 		// System.out.println(getSteamPrice("Sticker | fox | Cologne 2016"));
@@ -377,18 +382,26 @@ public class SkinBaronRestApiApplication {
 		// Geht erst weiter, wenn er eine erfolgreiche Antwort bekommen hat
 		Call call = null;
 		Response response = null;
+		request = new Request.Builder().url("https://api.skinbaron.de/GetExtendedPriceList").method("POST", body)
+				.addHeader("Content-Type", "application/json").addHeader("x-requested-with", "XMLHttpRequest").build();
+
+		boolean notnull = false;
+		int Skinbarontrys = 0;
 
 		try {
-			while (call == null) {
+			while (!notnull) {
 
-				request = new Request.Builder().url("https://api.skinbaron.de/GetExtendedPriceList")
-						.method("POST", body).addHeader("Content-Type", "application/json")
-						.addHeader("x-requested-with", "XMLHttpRequest").build();
+				System.out.println("Skinbaronfetchtrys:" + ++Skinbarontrys);
 				call = client.newCall(request);
+
+				try {
+					response = call.execute();
+					Thread.sleep(1000);
+					notnull = true;
+				} catch (Exception e) {}
+
 				Thread.sleep(3000);
 			}
-
-			response = call.execute();
 
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
