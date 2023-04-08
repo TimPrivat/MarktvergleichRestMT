@@ -1,5 +1,7 @@
 package com.Skinbaron.Yes;
 
+import java.util.Map;
+
 import org.json.simple.JSONObject;
 
 import com.google.gson.Gson;
@@ -33,6 +35,8 @@ public class AblaufThread implements Runnable {
 
 	public void run() {
 
+		Map<String, Double> SkinBaronMap = SkinBaronRestApiApplication.SkinBaronMap;
+		Map<String, Double> SkinPortMap = SkinBaronRestApiApplication.SkinBaronMap;
 		System.out.println("Modulo: " + modulo + " rest: " + rest);
 
 		for (int i = 0; i < SkinBaronRestApiApplication.hashnames.size(); i++) {
@@ -41,130 +45,43 @@ public class AblaufThread implements Runnable {
 
 				String name = SkinBaronRestApiApplication.hashnames.get(i);
 
-			//	 System.out.println("Aktueller Name: " + name);
+				// System.out.println("Aktueller Name: " + name);
 				Double Steamprice = SkinBaronRestApiApplication.getSteamPrice(name);
-				
-			//	 System.out.println("Aktueller Preis " + Steamprice);
+
+				// System.out.println("Aktueller Preis " + Steamprice);
 
 				// Findet den SkinbaronPreis
 
 				Double Skinbaronprice = null;
 
-				for (int o = 0; o < SkinBaronRestApiApplication.Skinbaronarr.size(); o++) {
+				try {
 
-					JSONObject sb = (JSONObject) SkinBaronRestApiApplication.Skinbaronarr.get(o);
-					String sbname = (String) sb.get("marketHashName");
+					Skinbaronprice = SkinBaronMap.get(name);
 
-					String asString = sb.toJSONString();
-
-					Gson gson = new Gson();
-					SkinBaronSkin s = gson.fromJson(sb.toString(), SkinBaronSkin.class);
-
-					String FN = "(Factory New)";
-					String MW = "(Minimal Wear)";
-					String FT = "(Field-Tested)";
-					String WW = "(Minimal Wear)";
-					String BS = "(Battle-Scarred)";
-
-					// Es gibt sonderfälle, wo skins in der Skinbaronfile stehen, aber weder ST
-					// noch Souv sind, aber als souvenier gezählt werden und den preis von billigen
-					// Items verfälschen
-
-					/*
-					 * if ((sbname.contains(FN) || sbname.contains(MW) || sbname.contains(FT) ||
-					 * sbname.contains(WW) || sbname.contains(BS)) && (s.souvenir == null &&
-					 * s.statTrak == null)) { continue;
-					 * 
-					 * }
-					 */
-
-					if (s.souvenir != null) {
-						if (!s.souvenir && sbname.contains("Souvenir")) {
-							sbname = sbname.replaceAll("Souvenir ", "");
-						}
-						if (s.souvenir && !sbname.contains("Souvenir")) {
-							sbname = "Souvenir " + sbname;
-						}
-					}
-					if (s.statTrak != null) {
-
-						if (!s.statTrak && sbname.contains("StatTrak™")) {
-							sbname = sbname.replaceAll("StatTrak™ ", "");
-						}
-						if (s.statTrak && !sbname.contains("StatTrak™")) {
-							sbname = "StatTrak™ " + sbname;
-						}
-					}
-
-					if (sbname.equals(name)) {
-						try {
-
-							boolean wear = false;
-
-							try {
-
-								Double w = (Double) sb.get("minWear");
-
-								if (w != null || w != 0.0) {
-
-									wear = true;
-
-								}
-
-							} catch (Exception e) {
-
-							}
-
-							if (sb.get("statTrak") == null && sb.get("souvenir") == null && (wear))
-								continue;
-
-							Skinbaronprice = (Double) sb.get("lowestPrice");
-
-						} catch (ClassCastException e) {
-							Long tmp = (Long) sb.get("lowestPrice");
-							Skinbaronprice = tmp * 1.0;
-
-						}
-
-						break;
-					}
-
+				} catch (Exception e) {
 				}
 
 				// Findet den SkinportPreis
 
-				Double SkinportPreis = null;
+				Double Skinportprice = null;
 
-				for (int o = 0; o < SkinBaronRestApiApplication.Skinportarr.size(); o++) {
+				try {
 
-					JSONObject sp = (JSONObject) SkinBaronRestApiApplication.Skinportarr.get(o);
-					if (sp.get("market_hash_name").equals(name)) {
+					Skinportprice = SkinPortMap.get(name);
 
-						try {
-
-							SkinportPreis = (Double) sp.get("min_price_skinport");
-
-						} catch (ClassCastException e) {
-
-							Long tmp = (Long) sp.get("min_price_skinport");
-							SkinportPreis = tmp * 1.0;
-
-						}
-						break;
-					}
-
+				} catch (Exception e) {
 				}
 
-				Skin a = new Skin(name, Steamprice, SkinportPreis, Skinbaronprice);
+				Skin a = new Skin(name, Steamprice, Skinportprice, Skinbaronprice);
 
 				System.out.println(i + "/" + SkinBaronRestApiApplication.hashnames.size() + " Skinname:" + a.markethash
 						+ " Steampreis: " + a.Steampreis + " SkinbaronPreis:" + a.Skinbaronpreis + " SkinportPreis:"
 						+ a.Skinportpreis + " SkinbaronDifferenzEuro:" + a.SkinBaronPreisdifferenzEuro
 						+ " SkinBarondifferenzProzent" + a.SkinBaronPreisdifferenzProzent + " SkinPortDifferenzEuro:"
-						+ a.SkinportPreisdifferenzEuro + " SkinportDifferenzProzent:"
-						+ a.SkinportPreisdifferenzProzent+ "EuroMarktplatz: "+a.MarktplatzEuro +" GrößereDifferenz: "+a.groeßereDifferenzEuro );
+						+ a.SkinportPreisdifferenzEuro + " SkinportDifferenzProzent:" + a.SkinportPreisdifferenzProzent
+						+ "EuroMarktplatz: " + a.MarktplatzEuro + " GrößereDifferenz: " + a.groeßereDifferenzEuro);
 
-				if (a.groeßereDifferenzProzent != null ) {
+				if (a.groeßereDifferenzProzent != null) {
 
 					SkinBaronRestApiApplication.allSkins.add(a);
 
