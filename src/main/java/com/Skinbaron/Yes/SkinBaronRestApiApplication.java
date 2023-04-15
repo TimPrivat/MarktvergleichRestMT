@@ -13,6 +13,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -21,7 +22,9 @@ import java.util.Scanner;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.util.encoders.Base32;
+
 import org.cryptacular.generator.TOTPGenerator;
 import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
@@ -37,6 +40,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import de.taimos.totp.TOTP;
 import dev.samstevens.totp.code.CodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.exceptions.CodeGenerationException;
@@ -65,10 +69,11 @@ public class SkinBaronRestApiApplication {
 		Date start = new Date(System.currentTimeMillis());
 
 		ablauf();
+		// Test();
 
 		Date end = new Date(System.currentTimeMillis());
 
-		Double Runtime = (double) ((end.getTime() - start.getTime())/1000);
+		Double Runtime = (double) ((end.getTime() - start.getTime()) / 1000);
 
 		System.out.println("Ran for " + Runtime + " seconds");
 		// System.out.println( new
@@ -90,11 +95,16 @@ public class SkinBaronRestApiApplication {
 	static String skinportpath;
 	static String skinbaronpath;
 	static String steampath;
+	static String bitskinspath;
 	static ArrayList<Skin> allSkins;
+
 	private static JSONArray Skinportarr;
 	static TreeMap<String, Double> SkinPortMap;
 	private static JSONArray Skinbaronarr = null;
 	static TreeMap<String, Double> SkinBaronMap;
+	private static JSONArray BitSkinsarr;
+	static TreeMap<String, Double> BitSkinsMap;
+
 	static ArrayList<String> hashnames;
 	static JSONObject Steamarr;
 	static int allThreadshavefinished = 0;
@@ -110,15 +120,18 @@ public class SkinBaronRestApiApplication {
 			JSONObject Skinbaron = parseObject(new File(syncSkinbaron()));
 			System.out.println("Starting Steam");
 			JSONObject Steam = parseObject(new File(syncSteam()));
-
+			System.out.println("Starting BitSkins");
+			syncBitSkins();
 			Skinportarr = (JSONArray) Skinport.get("alles");
 			Skinbaronarr = (JSONArray) Skinbaron.get("map");
+			BitSkinsarr = (JSONArray) parseObject(new File(bitskinspath)).get("prices");
 			hashnames = getSkinnames();
 			Steamarr = (JSONObject) Steam.get("items_list");
 			allSkins = new ArrayList<>();
 
 			arrangSkinbaronArray();
 			arrangSkinportArray();
+			arrangBitSkinsArray();
 
 			// System.out.println(SkinPortMap.toString());
 
@@ -160,7 +173,7 @@ public class SkinBaronRestApiApplication {
 
 					JSONObject tmp = new JSONObject();
 					tmp.put("markethash", skin.markethash);
-					tmp.put("SteamPreis", skin.Steampreis);
+					tmp.put("SteamPreis", round(skin.Steampreis));
 					tmp.put("SteamPreis nach Steuern", round(skin.SteampreisnachSteuern));
 					tmp.put("Marktplatz", skin.Marktplatz);
 
@@ -174,6 +187,12 @@ public class SkinBaronRestApiApplication {
 						tmp.put("SkinPortPreis", round(skin.Skinportpreis));
 						tmp.put("Differenz", round(skin.SkinportPreisdifferenzEuro));
 						tmp.put("ProzentDifferenz", round(skin.SkinportPreisdifferenzProzent));
+
+					} else if (skin.Marktplatz.equals("BitSkins")) {
+
+						tmp.put("BitSkinsPreis", round(skin.BitSkinspreis));
+						tmp.put("Differenz", round(skin.BitSkinsPreisdifferenzEuro));
+						tmp.put("ProzentDifferenz", round(skin.BitSkinsPreisdifferenzProzent));
 
 					}
 
@@ -213,11 +232,17 @@ public class SkinBaronRestApiApplication {
 						tmp.put("SkinBaronPreis", round(skin.Skinbaronpreis));
 						tmp.put("Differenz", round(skin.SkinBaronPreisdifferenzEuro));
 						tmp.put("ProzentDifferenz", round(skin.SkinBaronPreisdifferenzProzent));
-					} else {
+					} else if (skin.Marktplatz.equals("SkinPort")) {
 
 						tmp.put("SkinPortPreis", round(skin.Skinportpreis));
 						tmp.put("Differenz", round(skin.SkinportPreisdifferenzEuro));
 						tmp.put("ProzentDifferenz", round(skin.SkinportPreisdifferenzProzent));
+
+					} else if (skin.Marktplatz.equals("BitSkins")) {
+
+						tmp.put("BitSkinsPreis", round(skin.BitSkinspreis));
+						tmp.put("Differenz", round(skin.BitSkinsPreisdifferenzEuro));
+						tmp.put("ProzentDifferenz", round(skin.BitSkinsPreisdifferenzProzent));
 
 					}
 
@@ -444,6 +469,40 @@ public class SkinBaronRestApiApplication {
 
 		File f = new File("E://SteamMarketData//SkinBaron_" + getDate() + ".txt");
 		skinbaronpath = f.getAbsolutePath();
+
+		try {
+			f.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		write(pretty, f);
+
+		return f.getAbsolutePath();
+
+	}
+
+	public static String syncBitSkins() {
+
+		RestTemplate restTemplate = new RestTemplate();
+		String MFACode = null;
+		// Secret
+		// QVZUHYFDWITCKEYW
+		MFACode = getTOTPCode("QVZUHYFDWITCKEYW");
+		System.out.println("MFA-Code: " + MFACode);
+
+		HashMap<String, String> params = new HashMap<>();
+		params.put("api_key", "b9633511-38a6-496a-898d-0c3415ad98f9");
+		params.put("app_id", "730");
+		params.put("code", MFACode);
+
+		JSONObject object = restTemplate.postForObject("https://bitskins.com/api/v1/get_all_item_prices", params,
+				JSONObject.class);
+		String pretty = toPrettyFormat(object.toJSONString());
+
+		File f = new File("E://SteamMarketData//BitSkins_" + getDate() + ".txt");
+		bitskinspath = f.getAbsolutePath();
 
 		try {
 			f.createNewFile();
@@ -851,17 +910,57 @@ public class SkinBaronRestApiApplication {
 
 	}
 
+	private static void arrangBitSkinsArray() {
+
+		HashMap<String, Double> BitSkinsTempMap = new HashMap<>();
+
+		for (int i = 0; i < BitSkinsarr.size(); i++) {
+
+			JSONObject tmp = (JSONObject) BitSkinsarr.get(i);
+			String key = (String) tmp.get("market_hash_name");
+			Double price = Double.parseDouble((String) tmp.get("price"));
+			BitSkinsTempMap.put(key, price);
+
+		}
+
+		Map<String, Double> FertigesBitSkinsArray = new TreeMap<>(BitSkinsTempMap);
+
+		File f = new File("E://SteamMarketData//BitSkins_Clean_" + getDate() + ".txt");
+
+		try {
+			f.createNewFile();
+		} catch (IOException e) { // TODO Auto-generated
+			e.printStackTrace();
+		}
+
+		String s = FertigesBitSkinsArray.toString();
+		write(s, f);
+
+		BitSkinsMap = (TreeMap<String, Double>) FertigesBitSkinsArray;
+
+	}
+
+	private static String getTOTPCode(String secretKey) {
+		Base32 base32 = new Base32();
+		byte[] bytes = base32.decode(secretKey);
+		String hexKey = Hex.encodeHexString(bytes);
+		return TOTP.getOTP(hexKey);
+	}
+
 	static void Test() {
 
-		JSONObject Skinbaron = parseObject(new File("E:\\SteamMarketData\\Skinport_2023_04_08-13_59_55.txt"));
-
-		Skinportarr = (JSONArray) Skinbaron.get("alles");
-
-		new SkinBaronRestApiApplication().arrangSkinportArray();
-		// syncSkinbaron();
+		syncBitSkins();
+		arrangBitSkinsArray();
 
 		/*
-		 * steampath = "E://SteamMarketData//Steam_2022_08_10-20_47_49.txt";
+		 * JSONObject Skinbaron = parseObject(new
+		 * File("E:\\SteamMarketData\\Skinport_2023_04_08-13_59_55.txt"));
+		 * 
+		 * Skinportarr = (JSONArray) Skinbaron.get("alles");
+		 * 
+		 * new SkinBaronRestApiApplication().arrangSkinportArray(); // syncSkinbaron();
+		 * 
+		 * /* steampath = "E://SteamMarketData//Steam_2022_08_10-20_47_49.txt";
 		 * ArrayList<String> skinnames = getSkinnames();
 		 * 
 		 * JSONArray ar = new JSONArray(); for (String s : skinnames) { ar.add(s);
