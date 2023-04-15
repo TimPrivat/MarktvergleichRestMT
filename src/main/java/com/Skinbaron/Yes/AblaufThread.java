@@ -36,7 +36,7 @@ public class AblaufThread implements Runnable {
 	public void run() {
 
 		Map<String, Double> SkinBaronMap = SkinBaronRestApiApplication.SkinBaronMap;
-		Map<String, Double> SkinPortMap = SkinBaronRestApiApplication.SkinBaronMap;
+		Map<String, Double> SkinPortMap = SkinBaronRestApiApplication.SkinPortMap;
 		System.out.println("Modulo: " + modulo + " rest: " + rest);
 
 		for (int i = 0; i < SkinBaronRestApiApplication.hashnames.size(); i++) {
@@ -75,11 +75,11 @@ public class AblaufThread implements Runnable {
 				Skin a = new Skin(name, Steamprice, Skinportprice, Skinbaronprice);
 
 				System.out.println(i + "/" + SkinBaronRestApiApplication.hashnames.size() + " Skinname:" + a.markethash
-						+ " Steampreis: " + a.Steampreis + " SkinbaronPreis:" + a.Skinbaronpreis + " SkinportPreis:"
+						+ " Steampreis: " + a.Steampreis + " SkinbaronPreis:" + a.Skinbaronpreis + "SkinportPreis:"
 						+ a.Skinportpreis + " SkinbaronDifferenzEuro:" + a.SkinBaronPreisdifferenzEuro
-						+ " SkinBarondifferenzProzent" + a.SkinBaronPreisdifferenzProzent + " SkinPortDifferenzEuro:"
+						+ " SkinBarondifferenzProzent" + a.SkinBaronPreisdifferenzProzent + "SkinPortDifferenzEuro:"
 						+ a.SkinportPreisdifferenzEuro + " SkinportDifferenzProzent:" + a.SkinportPreisdifferenzProzent
-						+ "EuroMarktplatz: " + a.MarktplatzEuro + " GrößereDifferenz: " + a.groeßereDifferenzEuro);
+						+ "EuroMarktplatz: " + a.Marktplatz + " GrößereDifferenz: " + a.groeßereDifferenzEuro);
 
 				if (a.groeßereDifferenzProzent != null) {
 

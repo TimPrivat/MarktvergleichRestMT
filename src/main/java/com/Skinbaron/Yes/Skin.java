@@ -1,5 +1,8 @@
 package com.Skinbaron.Yes;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 public class Skin {
 
 	String markethash;
@@ -7,17 +10,6 @@ public class Skin {
 	Double Steampreis;
 	Double SteampreisnachSteuern;
 	Double Skinbaronpreis;
-
-	public Skin(String markethash, Double Steampreis, Double SkinportPreis, Double SkinbaronPreis) {
-		this.markethash = markethash;
-		this.Steampreis = Steampreis;// *0.97; // Anpassung für Dollar Euro Wechselkurs
-
-		this.Skinportpreis = SkinportPreis;
-		this.Skinbaronpreis = SkinbaronPreis;
-		SteampreisnachSteuern = Steampreis / 1.15;
-		berechneZeug();
-
-	}
 
 	Double SkinportPreisdifferenzEuro;
 	Double SkinportPreisdifferenzProzent;
@@ -27,103 +19,55 @@ public class Skin {
 	Double groeßereDifferenzProzent;
 	Double groeßereDifferenzEuro;
 	Double bessererWert;
-	String MarktplatzProzent;
-	String MarktplatzEuro;
+	String Marktplatz;
+	Double Prozentsum = 0.0;
 
-	public void berechneZeug() {
+	public Skin(String markethash, Double Steampreis, Double SkinportPreis, Double SkinbaronPreis) {
+		this.markethash = markethash;
+		this.Steampreis = Steampreis;// *0.97; // Anpassung für Dollar Euro Wechselkurs
 
-		if (Skinportpreis == null) {
+		this.Skinportpreis = SkinportPreis;
+		this.Skinbaronpreis = SkinbaronPreis;
+		SteampreisnachSteuern = Steampreis / 1.15;
+		// berechneZeug();
+		//System.out.println(markethash + " Skinbaronprice: " + SkinbaronPreis + " Skinportprice: " + SkinportPreis);
 
-			SkinportPreisdifferenzEuro = null;
-			SkinportPreisdifferenzProzent = null;
+		SkinportPreisdifferenzEuro = (Skinportpreis != null) ? (Steampreis / 1.15) - Skinportpreis : null;
+		SkinportPreisdifferenzProzent = (Skinportpreis != null) ? ((Steampreis / 1.15) / Skinportpreis) * 100 : null;
+		SkinBaronPreisdifferenzEuro = (SkinbaronPreis != null) ? (Steampreis / 1.15) - Skinbaronpreis : null;
+		SkinBaronPreisdifferenzProzent = (SkinbaronPreis != null) ? ((Steampreis / 1.15) / SkinbaronPreis) * 100 : null;
 
+		ArrayList<Double> Prozentdifferenzen = new ArrayList<>();
+		Prozentdifferenzen.add(SkinportPreisdifferenzProzent);
+		Prozentdifferenzen.add(SkinBaronPreisdifferenzProzent);
+
+		Prozentdifferenzen.forEach(x -> {
+			try {
+				Prozentsum += x;
+			} catch (Exception e) {
+			}
+			;
+		});
+
+		Double maxWert = null;
+
+		try {
+			maxWert = Collections.max(Prozentdifferenzen);
+		} catch (Exception e) {
 		}
-		if (Skinbaronpreis == null) {
 
-			SkinBaronPreisdifferenzEuro = null;
-			SkinBaronPreisdifferenzProzent = null;
-
-		}
-
-		if ((Skinportpreis == null && Skinbaronpreis == null) || Steampreis == 0) {
-			groeßereDifferenzEuro = null;
-			groeßereDifferenzProzent = null;
-			MarktplatzProzent = null;
-
-		} else if (Skinportpreis != null && Skinbaronpreis == null) {
-
-			SkinportPreisdifferenzEuro = (Steampreis / 1.15) - Skinportpreis;
-			SkinportPreisdifferenzProzent = ((Steampreis / 1.15) / Skinportpreis) * 100;
-			SkinportPreisdifferenzProzent = SkinportPreisdifferenzProzent - 100;
+		if (maxWert == SkinportPreisdifferenzProzent) {
+			Marktplatz = "SkinPort";
 			groeßereDifferenzProzent = SkinportPreisdifferenzProzent;
-			MarktplatzProzent = "SkinPort";
-
-		} else if (Skinportpreis == null && Skinbaronpreis != null) {
-
-			SkinBaronPreisdifferenzEuro = (Steampreis / 1.15) - Skinbaronpreis;
-			SkinBaronPreisdifferenzProzent = ((Steampreis / 1.15) / Skinbaronpreis) * 100;
-			SkinBaronPreisdifferenzProzent = SkinBaronPreisdifferenzProzent - 100;
-			groeßereDifferenzProzent = SkinBaronPreisdifferenzProzent;
-			MarktplatzProzent = "SkinBaron";
-
-		} else {
-
-			SkinportPreisdifferenzEuro = (Steampreis / 1.15) - Skinportpreis;
-			SkinportPreisdifferenzProzent = ((Steampreis / 1.15) / Skinportpreis) * 100;
-			SkinportPreisdifferenzProzent = SkinportPreisdifferenzProzent - 100;
-
-			SkinBaronPreisdifferenzEuro = (Steampreis / 1.15) - Skinbaronpreis;
-			SkinBaronPreisdifferenzProzent = ((Steampreis / 1.15) / Skinbaronpreis) * 100;
-			SkinBaronPreisdifferenzProzent = SkinBaronPreisdifferenzProzent - 100;
-
-			if (SkinportPreisdifferenzProzent > SkinBaronPreisdifferenzProzent) {
-
-				groeßereDifferenzProzent = SkinportPreisdifferenzProzent;
-				MarktplatzProzent = "SkinPort";
-			} else {
-
-				groeßereDifferenzProzent = SkinBaronPreisdifferenzProzent;
-				MarktplatzProzent = "SkinBaron";
-
-			}
-
-		}
-		if (MarktplatzProzent != null) {
-			if (MarktplatzProzent.equals("SkinBaron")) {
-
-				bessererWert = Skinbaronpreis;
-
-			} else {
-
-				bessererWert = Skinportpreis;
-
-			}
-
-		} else {
-
-			bessererWert = null;
-
-		}
-
-		if (SkinBaronPreisdifferenzEuro != null && SkinportPreisdifferenzEuro != null) {
-
-			if (SkinBaronPreisdifferenzEuro > SkinportPreisdifferenzEuro) {
-				groeßereDifferenzEuro = SkinBaronPreisdifferenzEuro;
-				MarktplatzEuro = "SkinBaron";
-			} else {
-				groeßereDifferenzEuro = SkinportPreisdifferenzEuro;
-				MarktplatzEuro = "SkinPort";
-			}
-
-		} else if (SkinBaronPreisdifferenzEuro != null) {
-
-			groeßereDifferenzEuro = SkinBaronPreisdifferenzEuro;
-			MarktplatzEuro = "SkinBaron";
-
-		} else if (SkinportPreisdifferenzEuro != null) {
-
 			groeßereDifferenzEuro = SkinportPreisdifferenzEuro;
-			MarktplatzEuro = "SkinPort";
+			bessererWert = SkinportPreis;
+
+		} else if (maxWert == SkinBaronPreisdifferenzProzent) {
+
+			Marktplatz = "SkinBaron";
+			groeßereDifferenzProzent = SkinBaronPreisdifferenzProzent;
+			groeßereDifferenzEuro = SkinBaronPreisdifferenzEuro;
+			bessererWert = SkinbaronPreis;
 
 		}
 

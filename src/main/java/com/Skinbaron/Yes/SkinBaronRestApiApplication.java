@@ -61,7 +61,16 @@ public class SkinBaronRestApiApplication {
 		// Test();
 		// System.out.println(s);
 
+		SimpleDateFormat formatter = new SimpleDateFormat("yyyy_MM_dd-HH_mm_ss");
+		Date start = new Date(System.currentTimeMillis());
+
 		ablauf();
+
+		Date end = new Date(System.currentTimeMillis());
+
+		Double Runtime = (double) ((end.getTime() - start.getTime())/1000);
+
+		System.out.println("Ran for " + Runtime + " seconds");
 		// System.out.println( new
 		// SkinBaronRestApiApplication().getClass().getProtectionDomain().getCodeSource().getLocation());
 
@@ -111,6 +120,10 @@ public class SkinBaronRestApiApplication {
 			arrangSkinbaronArray();
 			arrangSkinportArray();
 
+			// System.out.println(SkinPortMap.toString());
+
+			// System.out.println(SkinBaronMap.toString());
+
 			// So auf das Array Zugreifen
 			// System.out.println(((JSONObject) Skinbaronarr.get(3)).get("lowestPrice"));
 
@@ -127,15 +140,10 @@ public class SkinBaronRestApiApplication {
 
 			while (allThreadshavefinished < Threadcount) {
 
-				Thread.sleep(10000);
+				Thread.sleep(1000);
 			}
 			// Klon für 2ten Sortingalgorithmus
-			ArrayList<Skin> allskinsClone = new ArrayList<>();
-
-			for (int i = 0; i < allSkins.size(); i++) {
-
-				allskinsClone.add(allSkins.get(i));
-			}
+			ArrayList<Skin> allskinsClone = (ArrayList<Skin>) allSkins.clone();
 
 			allSkins.sort(new Skincomparator());
 
@@ -146,7 +154,7 @@ public class SkinBaronRestApiApplication {
 
 			for (int i = 0; i < allSkins.size(); i++) {
 
-				if (allSkins.get(i).bessererWert != null && allSkins.get(i).MarktplatzProzent != null) {
+				if (allSkins.get(i).bessererWert != null && allSkins.get(i).Marktplatz != null) {
 
 					Skin skin = allSkins.get(i);
 
@@ -154,14 +162,14 @@ public class SkinBaronRestApiApplication {
 					tmp.put("markethash", skin.markethash);
 					tmp.put("SteamPreis", skin.Steampreis);
 					tmp.put("SteamPreis nach Steuern", round(skin.SteampreisnachSteuern));
-					tmp.put("Marktplatz", skin.MarktplatzProzent);
+					tmp.put("Marktplatz", skin.Marktplatz);
 
-					if (skin.MarktplatzProzent.equals("SkinBaron")) {
+					if (skin.Marktplatz.equals("SkinBaron")) {
 
 						tmp.put("SkinBaronPreis", round(skin.Skinbaronpreis));
 						tmp.put("Differenz", round(skin.SkinBaronPreisdifferenzEuro));
 						tmp.put("ProzentDifferenz", round(skin.SkinBaronPreisdifferenzProzent));
-					} else {
+					} else if (skin.Marktplatz.equals("SkinPort")) {
 
 						tmp.put("SkinPortPreis", round(skin.Skinportpreis));
 						tmp.put("Differenz", round(skin.SkinportPreisdifferenzEuro));
@@ -190,7 +198,7 @@ public class SkinBaronRestApiApplication {
 
 			for (int i2 = 0; i2 < allskinsClone.size(); i2++) {
 
-				if (allskinsClone.get(i2).bessererWert != null && allskinsClone.get(i2).MarktplatzEuro != null) {
+				if (allskinsClone.get(i2).bessererWert != null && allskinsClone.get(i2).Marktplatz != null) {
 
 					Skin skin = allskinsClone.get(i2);
 
@@ -198,9 +206,9 @@ public class SkinBaronRestApiApplication {
 					tmp.put("markethash", skin.markethash);
 					tmp.put("SteamPreis", skin.Steampreis);
 					tmp.put("SteamPreis nach Steuern", round(skin.SteampreisnachSteuern));
-					tmp.put("Marktplatz", skin.MarktplatzEuro);
+					tmp.put("Marktplatz", skin.Marktplatz);
 
-					if (skin.MarktplatzEuro.equals("SkinBaron")) {
+					if (skin.Marktplatz.equals("SkinBaron")) {
 
 						tmp.put("SkinBaronPreis", round(skin.Skinbaronpreis));
 						tmp.put("Differenz", round(skin.SkinBaronPreisdifferenzEuro));
@@ -701,16 +709,14 @@ public class SkinBaronRestApiApplication {
 
 		for (int o = 0; o < Skinbaronarr.size(); o++) {
 
-						
 			JSONObject sb = (JSONObject) Skinbaronarr.get(o);
-			
-			
-			//Baut den richtigen Hashname zusammen
-			//... es gibt trozdem manchmal Fehler
+
+			// Baut den richtigen Hashname zusammen
+			// ... es gibt trozdem manchmal Fehler
 			// FICK DIE SKINBARON API
 			String sbname = (String) sb.get("name");
-			sbname = sbname.replaceAll("Souvenir ","");
-			sbname = sbname.replaceAll("StatTrak™ ","");
+			sbname = sbname.replaceAll("Souvenir ", "");
+			sbname = sbname.replaceAll("StatTrak™ ", "");
 
 			String asString = sb.toJSONString();
 
@@ -728,14 +734,14 @@ public class SkinBaronRestApiApplication {
 			// Es gibt sonderfälle, wo skins in der Skinbaronfile stehen, aber weder ST
 			// noch Souv sind, aber als souvenier gezählt werden und den preis von billigen
 			// Items verfälschen
-			
-		
+
 			boolean wear = false;
 			try {
 
 				wear = (s.minWear != 0.0 || s.minWear != null) ? true : false;
 
-			} catch (Exception e) {}
+			} catch (Exception e) {
+			}
 
 			if (s.souvenir == null && s.statTrak == null && (wear)) {
 
@@ -782,22 +788,24 @@ public class SkinBaronRestApiApplication {
 
 			}
 
-			System.out.println("Skinbaronname: "+ sbname);
+			System.out.println("Skinbaronname: " + sbname);
 			SkinbaronTempMap.put(sbname, Skinbaronprice);
 
 		}
 
 		Map<String, Double> FertigesSkinbaronArray = new TreeMap<>(SkinbaronTempMap);
 
-		/*
-		 * File f = new File("E://SteamMarketData//SkinBaron_Clean_" + getDate() +
-		 * ".txt");
-		 * 
-		 * try { f.createNewFile(); } catch (IOException e) { // TODO Auto-generated
-		 * catch block e.printStackTrace(); }
-		 * 
-		 * String s = FertigesSkinbaronArray.toString(); write(s, f);
-		 */
+		File f = new File("E://SteamMarketData//SkinBaron_Clean_" + getDate() + ".txt");
+
+		try {
+			f.createNewFile();
+		} catch (IOException e) { // TODO Auto-generated
+			e.printStackTrace();
+		}
+
+		String s = FertigesSkinbaronArray.toString();
+		write(s, f);
+
 		SkinBaronMap = (TreeMap<String, Double>) FertigesSkinbaronArray;
 	}
 
@@ -828,15 +836,17 @@ public class SkinBaronRestApiApplication {
 
 		Map<String, Double> FertigesSkinportArray = new TreeMap<>(SkinportTempMap);
 
-		/*
-		 * File f = new File("E://SteamMarketData//SkinPort_Clean_" + getDate() +
-		 * ".txt");
-		 * 
-		 * try { f.createNewFile(); } catch (IOException e) { // TODO Auto-generated
-		 * catch block e.printStackTrace(); }
-		 * 
-		 * String s = FertigesSkinportArray.toString(); write(s, f);
-		 */
+		File f = new File("E://SteamMarketData//SkinPort_Clean_" + getDate() + ".txt");
+
+		try {
+			f.createNewFile();
+		} catch (IOException e) { // TODO Auto-generated
+			e.printStackTrace();
+		}
+
+		String s = FertigesSkinportArray.toString();
+		write(s, f);
+
 		SkinPortMap = (TreeMap<String, Double>) FertigesSkinportArray;
 
 	}
