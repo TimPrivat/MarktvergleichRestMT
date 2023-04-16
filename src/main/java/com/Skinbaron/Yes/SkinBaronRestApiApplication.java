@@ -69,7 +69,7 @@ public class SkinBaronRestApiApplication {
 		Date start = new Date(System.currentTimeMillis());
 
 		ablauf();
-		// Test();
+//		Test();
 
 		Date end = new Date(System.currentTimeMillis());
 
@@ -91,6 +91,7 @@ public class SkinBaronRestApiApplication {
 		System.out.println("Fertig");
 	}
 
+	static Double EuroDollarConversionRate;
 	// Der Filepath zur skinportfile
 	static String skinportpath;
 	static String skinbaronpath;
@@ -112,7 +113,7 @@ public class SkinBaronRestApiApplication {
 
 	@SuppressWarnings("unchecked")
 	public static void ablauf() {
-
+		EuroDollarConversionRate = getDollarEuroConversionrate();
 		try {
 			System.out.println("Starting Skinport");
 			JSONObject Skinport = parseObject(new File(syncSkinport()));
@@ -223,7 +224,7 @@ public class SkinBaronRestApiApplication {
 
 					JSONObject tmp = new JSONObject();
 					tmp.put("markethash", skin.markethash);
-					tmp.put("SteamPreis", skin.Steampreis);
+					tmp.put("SteamPreis", round(skin.Steampreis));
 					tmp.put("SteamPreis nach Steuern", round(skin.SteampreisnachSteuern));
 					tmp.put("Marktplatz", skin.Marktplatz);
 
@@ -310,7 +311,7 @@ public class SkinBaronRestApiApplication {
 
 		// Kostet 5€ im Monat
 		String a = r.getForObject(
-				"https://api.steamapis.com/market/items/730?api_key=juLCSKqmzVIF2fj6181rINv7F3M&format=compact",
+				"https://api.steamapis.com/market/items/730?api_key=juLCSKqmzVIF2fj6181rINv7F3M&format=compact&compact_value=safe_ts.last_24h",
 				String.class, h);
 		String s = toPrettyFormat(a);
 
@@ -947,10 +948,24 @@ public class SkinBaronRestApiApplication {
 		return TOTP.getOTP(hexKey);
 	}
 
-	static void Test() {
+	private static Double getDollarEuroConversionrate() {
 
-		syncBitSkins();
-		arrangBitSkinsArray();
+		RestTemplate r = new RestTemplate();
+		JSONObject allratesObject = (JSONObject) r.getForObject(
+				"https://api.currencyfreaks.com/v2.0/rates/latest?apikey=412db794cf984058a9013e6cf23838c2",
+				JSONObject.class);
+		
+		Map allrates = (Map) allratesObject.get("rates");
+		
+		Double Rate = Double.parseDouble((String) allrates.get("EUR"));
+		System.out.println("1 Euro = " + round(1 / Rate) + " Dollar");
+		return Rate;
+	}
+
+	static void Test() {
+		getDollarEuroConversionrate();
+//		syncBitSkins();
+		// arrangBitSkinsArray();
 
 		/*
 		 * JSONObject Skinbaron = parseObject(new

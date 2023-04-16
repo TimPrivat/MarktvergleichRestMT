@@ -28,11 +28,11 @@ public class Skin {
 	public Skin(String markethash, Double Steampreis, Double SkinportPreis, Double SkinbaronPreis,
 			Double BitSkinsPreis) {
 		this.markethash = markethash;
-		this.Steampreis = (Steampreis != null) ? Steampreis * 0.97 : null;// ; // Anpassung für Dollar Euro Wechselkurs
+		this.Steampreis = (Steampreis != null) ? Steampreis * SkinBaronRestApiApplication.EuroDollarConversionRate : null;// ; // Anpassung für Dollar Euro Wechselkurs
 
 		this.Skinportpreis = SkinportPreis;
 		this.Skinbaronpreis = SkinbaronPreis;
-		this.BitSkinspreis = (BitSkinsPreis != null) ? BitSkinsPreis * 0.97 : null;
+		this.BitSkinspreis = (BitSkinsPreis != null) ? BitSkinsPreis * SkinBaronRestApiApplication.EuroDollarConversionRate : null;
 		SteampreisnachSteuern = Steampreis / 1.15;
 		// berechneZeug();
 		// System.out.println(markethash + " Skinbaronprice: " + SkinbaronPreis + "
